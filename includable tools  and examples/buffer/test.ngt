@@ -1,0 +1,117 @@
+
+#include"buffer.ngt"
+//#include"hip.ngt"
+#include "sound_positioning.ngt"
+#include "sound_pool.ngt"
+//buffer
+
+sound_pool p;
+void main()
+{
+//creating buffers
+create_buffer("notifications");
+create_buffer("messages");
+create_buffer("global");
+create_buffer("miscs");
+//adding items in too buffers
+add_buffer_item("miscs", "There are various things here");
+add_buffer_item("miscs", "If you find a problem, feel free to let us know.");
+add_buffer_item("notifications", "hello. welcome too my world");
+add_buffer_item("notifications","this is a test");
+add_buffer_item("notifications", "I hope you enjoy");
+add_buffer_item("global", "user name is coin to the server");
+add_buffer_item("global", "user name is died");
+add_buffer_item("global", "user name is exit to the server");
+add_buffer_item("messages", "hello Im a user...");
+add_buffer_item("messages", "How are you");
+add_buffer_item("messages", "How is your day going");
+show_window("ngt buffer test");
+wait(1000);
+while(true)
+{
+wait(5);
+if(key_pressed(SDLK_PERIOD))
+{
+if(alt_is_down())
+{
+move_buffer_back();
+}
+else if(shift_is_down())
+{
+firstbuffer();
+}
+else
+{
+bufferleft();
+}
+}
+if(key_pressed(SDLK_COMMA))
+{
+if(alt_is_down())
+{
+move_buffer_next();
+}
+else if(shift_is_down())
+{
+lastbuffer();
+}
+else
+{
+bufferright();
+}
+}
+if(key_pressed(SDLK_RIGHTBRACKET))
+{
+if(shift_is_down())
+{
+bottombufferitem();
+}
+else
+{
+nextbufferitem();
+}
+}
+if(key_pressed(SDLK_LEFTBRACKET))
+{
+if(shift_is_down())
+{
+topbufferitem();
+}
+else
+{
+prevbufferitem();
+}
+}
+if(key_pressed(SDLK_ESCAPE))
+{
+speak("exiting");
+wait(1000);
+break;
+}
+}
+}
+//end
+bool alt_is_down()
+{
+return key_down(SDLK_LALT) || key_down(SDLK_RALT);
+}
+bool shift_is_down()
+{
+return key_down(SDLK_LSHIFT) || key_down(SDLK_RSHIFT);
+}
+bool toggle(bool b)
+{
+return b?false:true;
+}
+bool int_to_bool(int b)
+{
+return b==1?true:false;
+}
+int toggle(int b)
+{
+return b==1?0:1;
+}
+int bool_to_int(bool b)
+{
+return b?1:0;
+}
