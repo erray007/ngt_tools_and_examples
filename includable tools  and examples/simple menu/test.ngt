@@ -2,11 +2,13 @@
 menu m;
 void main()
 {
-
 show_window("test");
-m.add_item("login","login");
-m.add_item("create account","create");
-m.add_item("close","close");
+m.wrap=false;
+m.enable_multi_letter_navigation=true;
+m.add_item_both("tada.wav","tada.wav");
+m.add_item("ding.wav","ding.wav");
+m.add_item_tts("close","close");
 int i=m.run("welcome");
-alert("is clicked ",m.get_item_name(i));
+if(i>0) alert("is clicked ",m.get_item_name(i));
+else alert("by by","");
 }

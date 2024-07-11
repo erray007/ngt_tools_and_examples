@@ -1,13 +1,20 @@
 /*
-This menu type is a simplified version of the dynamic menu pro in BGT and only supports speech.
+This menu was made with reference to the dynamic menu in BGT.
+Edited by erray.007
+This menu supports speech and audio playback from file. Additionally, if you want, you can use both speaking and audio playback functions at the same time.
+If both speech and audio playback are to be added at the same time, the menu item and the audio file must be the same for now. This will change soon.
 */
 #include "key_keycodes.ngt"
 class menu_item
 {
-string name,option;
+string name,option,letter;
+bool is_filename;
+bool play_and_speak;
 menu_item()
 {
 name="";
+is_filename=true;
+play_and_speak=true;;
 option="";
 }
 }
@@ -16,10 +23,27 @@ class menu
 bool wrap;
 bool allow_escape;
 bool enable_home_and_end;
+bool enable_first_letter_navigation;
+bool enable_multi_letter_navigation;
+bool speak_letter;
+timer multinav_timer;
 menu()
 {
 running=false;
 reset(true);
+}
+sound menusound;
+int add_item(string filename, string name="",string key="")
+{
+return add_item_extended(filename, true, false,name,key);
+}
+int add_item_both(string filename, string name="",string key="")
+{
+return add_item_extended(filename, true, true,name,key);
+}
+int add_item_tts(string text, string name="",string key="")
+{
+return add_item_extended(text, false, false,name,key);
 }
 
 int get_item_count()
@@ -38,6 +62,16 @@ return menu_position;
 bool is_running()
 {
 return running;
+}
+bool set_callback(menu_callback@ callback, string user_data)
+{
+if(running==true)
+{
+return false;
+}
+@callback_handle=@callback;
+callback_data=user_data;
+return true;
 }
 string get_item_name(int menu_item)
 {
@@ -60,9 +94,133 @@ if(item_count==0)
 return -1;
 }
 menu_position=0;
+sound internal_sound;
+bool speak_item=false;
+if (enable_first_letter_navigation==true or enable_multi_letter_navigation==true)
+get_input();
+string char;
+string multichar;
+string test;
 running=true;
 while(true)
 {
+
+if (enable_first_letter_navigation==false and enable_multi_letter_navigation==true)
+{
+if(multinav_timer.elapsed_millis>1000 and multichar!="")
+multichar="";
+string c=get_input();
+if(c!=""and multichar!=c)
+{
+multinav_timer.restart();
+multichar+=c;
+}
+if(multichar!="" and c!="")
+{
+bool found=false;
+for (uint i=menu_position; i<item_list.length(); i++)
+{
+test=item_list[i].option;
+if (test.substr(0, multichar.length())==multichar)
+{
+if(menu_position>0)
+{
+if(test.substr(0, multichar.length())==item_list[menu_position-1].option.substr(0, multichar.length()) and multichar.length()>1)
+{
+found=true;
+break;
+}
+}
+if (menu_position-1<i)
+menu_position=i+1;
+else if (menu_position-1>i)
+menu_position=i+1;
+
+speak_item=true;
+found=true;
+break;
+}
+else
+{
+continue;
+}
+}
+if (found==false)
+{
+for (uint i=0; i<menu_position; i++)
+{
+test=item_list[i].option;
+if (test.substr(0, multichar.length())==multichar)
+{
+if(menu_position>0)
+{
+if(test.substr(0, multichar.length())==item_list[menu_position-1].option.substr(0, multichar.length()) and multichar.length()>1)
+{
+found=true;
+break;
+}
+}
+if (menu_position-1<i)
+menu_position=i+1;
+else if (menu_position-1>i)
+menu_position=i+1;
+speak_item=true;
+break;
+}
+else
+{
+continue;
+}
+}
+}
+}
+}
+if (enable_first_letter_navigation==true and enable_multi_letter_navigation==false)
+{
+char=get_input();
+if(char!="" )
+{
+bool found=false;
+for (uint i=menu_position; i<item_list.length(); i++)
+{
+test=item_list[i].letter;
+if (test==char)
+{
+if (menu_position-1<i)
+menu_position=i+1;
+else if (menu_position-1>i and test==char)
+menu_position=i+1;
+speak_item=true;
+found=true;
+break;
+}
+else
+{
+continue;
+}
+}
+if (found==false)
+{
+for (uint i=0; i<menu_position; i++)
+{
+test=item_list[i].letter;
+if (test==char)
+{
+if (menu_position-1<i)
+menu_position=i+1;
+else if (menu_position-1>i and test==char)
+menu_position=i+1;
+speak_item=true;
+break;
+}
+else
+{
+continue;
+}
+}
+}
+}
+}
 
 if(@callback_handle!=null)
 {
@@ -73,6 +231,29 @@ running=false;
 return callback_result;
 }
 }
+if(speak_item==true)
+{
+if(item_list[menu_position-1].is_filename==true)
+{
+if(internal_sound.stream(item_list[menu_position-1].option)==false)
+{
+running=false;
+return -1;
+}
+internal_sound.play();
+if(item_list[menu_position-1].play_and_speak==true) speak(item_list[menu_position-1].option,true);
+}
+else
+{
+if(internal_sound.active==true)
+{
+internal_sound.close();
+}
+speak(item_list[menu_position-1].option,true);
+}
+speak_item=false;
+}
+
 if(key_pressed(KEY_RETURN))
 {
 if(menu_position!=0)
@@ -91,7 +272,7 @@ if(key_pressed(KEY_UP))
 if(menu_position==0)
 {
 menu_position=item_count;
-speak(item_list[menu_position-1].option);
+speak_item=true;
 continue;
 }
 if(menu_position==1)
@@ -99,7 +280,7 @@ if(menu_position==1)
 if(wrap==true)
 {
 menu_position=item_count;
-speak(item_list[menu_position-1].option);
+speak_item=true;
 continue;
 }
 else
@@ -108,7 +289,7 @@ continue;
 }
 }
 menu_position-=1;
-speak(item_list[menu_position-1].option);
+speak_item=true;
 continue;
 }
 if(key_pressed(KEY_DOWN))
@@ -118,7 +299,7 @@ if(menu_position==item_count)
 if(wrap==true)
 {
 menu_position=1;
-speak(item_list[menu_position-1].option);
+speak_item=true;
 continue;
 }
 else
@@ -127,7 +308,7 @@ continue;
 }
 }
 menu_position+=1;
-speak(item_list[menu_position-1].option);
+speak_item=true;
 continue;
 }
 if(enable_home_and_end==true)
@@ -135,13 +316,13 @@ if(enable_home_and_end==true)
 if(key_pressed(KEY_HOME))
 {
 menu_position=1;
-speak(item_list[menu_position-1].option);
+speak_item=true;
 continue;
 }
 if(key_pressed(KEY_END))
 {
 menu_position=item_count;
-speak(item_list[menu_position-1].option);
+speak_item=true;
 continue;
 }
 }
@@ -160,6 +341,9 @@ return false;
 item_list.resize(0);
 if(completely==true)
 {
+speak_letter=false;
+enable_first_letter_navigation=false;
+
 wrap=true;
 allow_escape=true;
 enable_home_and_end=false;
@@ -173,7 +357,7 @@ string callback_data;
 bool running;
 int menu_position;
 menu_item[] item_list;
-int add_item( string name="",string option="")
+int add_item_extended(string filename, bool is_filename, bool play_and_speak,string name="",string key="")
 {
 if(running==true)
 {
@@ -181,8 +365,17 @@ return -1;
 }
 int new_index=item_list.length();
 item_list.resize(new_index+1);
-item_list[new_index].option=option;
+item_list[new_index].option=filename;
+item_list[new_index].is_filename=is_filename;
+item_list[new_index].play_and_speak=play_and_speak;
 item_list[new_index].name=name;
+if (key=="")
+{
+key=filename[0];
+key=key.lower();
+}
+item_list[new_index].letter=key;
+
 return new_index+1;
 }
 
