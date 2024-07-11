@@ -1,0 +1,95 @@
+/*
+created by erray.007
+this class is a map handler class for your online games
+You can add this class according to your needs.
+enjoy it
+*/
+map@[]maps(0);
+class map
+{
+vector min,max;
+string name,data;
+string []tiles;
+//With this function we will get the tile types on the server side. Don't forget to get access to the map by calling the get_map_index function wherever you want to use it
+string get_tile_type(int x, int y, int z)
+{
+string result;
+for(uint i=0; i<this.tiles.length(); i++)
+{
+string[] parameters=this.tiles[i].split(":");
+if(parameters.length()>5)
+{
+int minx=string_to_number(parameters[0]);
+int maxx=string_to_number(parameters[1]);
+int miny=string_to_number(parameters[2]);
+int maxy=string_to_number(parameters[3]);
+int minz=string_to_number(parameters[4]);
+int maxz=string_to_number(parameters[5]);
+if(minx>x)
+{
+continue;
+}
+if(minx<=x and maxx>=x and miny<=y and maxy>=y and minz<=z and maxz>=z and parameters.length()>6)
+{
+result=parameters[6];
+}
+}
+}
+return result;
+}
+
+//we collect map data with the constructor
+map(string mapname)
+{
+this.tiles.resize(0);
+file f;
+f.open("maps/"+mapname+".map", "rb");
+this.data=f.read(f.get_size());
+f.close();
+//now we divide the data into rows
+string [] lines=this.data.split("\r\n");
+for(uint i=0; i<lines.length(); i++)
+{
+//now let's divide the lines into words
+string[]words=lines[i].split(":");
+if(words[0]=="minx"&&words.length()==2) this.min.x=string_to_number(words[1]);
+if(words[0]=="maxx"&&words.length()==2) this.max.x=string_to_number(words[1]);
+if(words[0]=="miny"&&words.length()==2) this.min.y=string_to_number(words[1]);
+if(words[0]=="maxy"&&words.length()==2) this.max.y=string_to_number(words[1]);
+if(words[0]=="minz"&&words.length()==2) this.min.z=string_to_number(words[1]);
+if(words[0]=="maxz"&&words.length()==2) this.max.z=string_to_number(words[1]);
+if(words[0]=="tile"&&words.length()==8)
+{
+this.tiles.insert_last(string_to_number(words[1])+":"+string_to_number(words[2])+":"+string_to_number(words[3])+":"+string_to_number(words[4])+":"+string_to_number(words[5])+":"+string_to_number(words[6])+":"+words[7]+"");
+}
+//You can add other functions included in the data here. Let's end the loop here for now
+}//end_of_for
+}//constructor end
+}//endclass
+//Here we create our index function to access our map from anywhere in the game.
+int get_map_index(string name)
+{
+for(uint i=0; i<maps.length(); i++)
+{
+if(name==maps[i].name)
+{
+return i;
+}
+}
+return -1;
+}
+
+void load_all_maps()
+{
+maps.resize(0);
+filesystem fs;
+fs.change_current_path("maps/");
+string[] mapfiles=fs.get_files();
+
+for(uint i=0; i<mapfiles.length(); i++)
+{
+string filename=mapfiles[i].replace(".map", "");
+map m(filename);
+maps.insert_last(m);
+}
+}
