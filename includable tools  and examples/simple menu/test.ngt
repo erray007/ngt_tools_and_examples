@@ -1,0 +1,12 @@
+#include"menu.ngt"
+menu m;
+void main()
+{
+
+show_window("test");
+m.add_item("login","login");
+m.add_item("create account","create");
+m.add_item("close","close");
+int i=m.run("welcome");
+alert("is clicked ",m.get_item_name(i));
+}

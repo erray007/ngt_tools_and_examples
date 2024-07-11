@@ -1,0 +1,191 @@
+/*
+This menu type is a simplified version of the dynamic menu pro in BGT and only supports speech.
+*/
+#include "key_keycodes.ngt"
+class menu_item
+{
+string name,option;
+menu_item()
+{
+name="";
+option="";
+}
+}
+class menu
+{
+bool wrap;
+bool allow_escape;
+bool enable_home_and_end;
+menu()
+{
+running=false;
+reset(true);
+}
+
+int get_item_count()
+{
+return item_list.length();
+}
+
+int get_position()
+{
+if(running==false)
+{
+return -1;
+}
+return menu_position;
+}
+bool is_running()
+{
+return running;
+}
+string get_item_name(int menu_item)
+{
+if(menu_item<1 or menu_item>item_list.length())
+{
+return "";
+}
+return item_list[menu_item-1].name;
+}
+int run(string intro, bool is_intro_tts=true)
+{
+speak(intro);
+if(running==true)
+{
+return -1;
+}
+int item_count=item_list.length();
+if(item_count==0)
+{
+return -1;
+}
+menu_position=0;
+running=true;
+while(true)
+{
+
+if(@callback_handle!=null)
+{
+int callback_result=callback_handle(this, callback_data);
+if(callback_result!=0)
+{
+running=false;
+return callback_result;
+}
+}
+if(key_pressed(KEY_RETURN))
+{
+if(menu_position!=0)
+{
+running=false;
+return menu_position;
+}
+}
+if(key_pressed(KEY_ESCAPE)&&allow_escape==true)
+{
+running=false;
+return 0;
+}
+if(key_pressed(KEY_UP))
+{
+if(menu_position==0)
+{
+menu_position=item_count;
+speak(item_list[menu_position-1].option);
+continue;
+}
+if(menu_position==1)
+{
+if(wrap==true)
+{
+menu_position=item_count;
+speak(item_list[menu_position-1].option);
+continue;
+}
+else
+{
+continue;
+}
+}
+menu_position-=1;
+speak(item_list[menu_position-1].option);
+continue;
+}
+if(key_pressed(KEY_DOWN))
+{
+if(menu_position==item_count)
+{
+if(wrap==true)
+{
+menu_position=1;
+speak(item_list[menu_position-1].option);
+continue;
+}
+else
+{
+continue;
+}
+}
+menu_position+=1;
+speak(item_list[menu_position-1].option);
+continue;
+}
+if(enable_home_and_end==true)
+{
+if(key_pressed(KEY_HOME))
+{
+menu_position=1;
+speak(item_list[menu_position-1].option);
+continue;
+}
+if(key_pressed(KEY_END))
+{
+menu_position=item_count;
+speak(item_list[menu_position-1].option);
+continue;
+}
+}
+wait(5);
+}
+running=false;
+return -1;
+}
+
+bool reset(bool completely)
+{
+if(running==true)
+{
+return false;
+}
+item_list.resize(0);
+if(completely==true)
+{
+wrap=true;
+allow_escape=true;
+enable_home_and_end=false;
+@callback_handle=null;
+}
+return true;
+}
+
+menu_callback@ callback_handle;
+string callback_data;
+bool running;
+int menu_position;
+menu_item[] item_list;
+int add_item( string name="",string option="")
+{
+if(running==true)
+{
+return -1;
+}
+int new_index=item_list.length();
+item_list.resize(new_index+1);
+item_list[new_index].option=option;
+item_list[new_index].name=name;
+return new_index+1;
+}
+
+}
+
+funcdef int menu_callback(menu@, string);
