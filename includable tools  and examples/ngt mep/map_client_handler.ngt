@@ -33,9 +33,9 @@ tiles.insert_last(string_to_number(words[1])+":"+string_to_number(words[2])+":"+
 string get_tile_type(int x, int y, int z)
 {
 string result;
-for(uint i=0; i<this.tiles.length(); i++)
+for(uint i=0; i<tiles.length(); i++)
 {
-string[] parameters=this.tiles[i].split(":");
+string[] parameters=tiles[i].split(":");
 if(parameters.length()>5)
 {
 int minx=string_to_number(parameters[0]);
